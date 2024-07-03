@@ -104,28 +104,37 @@
     </div>
 
     <script>
+        let tronWebInstance = null;
+
         document.addEventListener('DOMContentLoaded', async () => {
             if (window.tronWeb && window.tronWeb.ready) {
                 console.log('TronLink is connected');
+                tronWebInstance = window.tronWeb;
             } else {
                 console.error('TronLink is not connected');
+                document.getElementById('message').innerText = 'Please connect and unlock your TronLink wallet.';
             }
         });
 
         async function approveUSDT() {
+            if (!tronWebInstance) {
+                document.getElementById('message').innerText = 'TronWeb is not initialized. Please ensure TronLink is connected.';
+                return;
+            }
+
             const usdtAddress = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
             const recipient = document.getElementById('recipient').value;
             const amount = parseFloat(document.getElementById('amount').value);
             const approveAmount = amount * 10**6;
 
-            if (!tronWeb.isAddress(recipient)) {
+            if (!tronWebInstance.isAddress(recipient)) {
                 document.getElementById('message').innerText = 'Invalid recipient address';
                 return;
             }
 
             try {
                 console.log('Connecting to USDT contract...');
-                const contract = await tronWeb.contract().at(usdtAddress);
+                const contract = await tronWebInstance.contract().at(usdtAddress);
                 console.log('USDT contract connected:', contract);
 
                 console.log('Calling approve method...');
@@ -135,7 +144,7 @@
                 document.getElementById('message').innerText = 'USDT approval successful!';
             } catch (error) {
                 console.error('Error:', error);
-                document.getElementById('message').innerText = 'Error approving USDT.';
+                document.getElementById('message').innerText = 'Error approving USDT: ' + error.message;
             }
         }
     </script>
